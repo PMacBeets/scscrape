@@ -1,6 +1,8 @@
 import datetime
-import Player_Stat
 import Const
+import Player_year
+import Team
+import Player_Stat
 
 class Player():
 
@@ -9,11 +11,14 @@ class Player():
     list_index = -1;  # index specifying location in list (maybe dont worry about it)
     years_played = 0
 
-    def __init__(self,firstname, secondname):
+    def __init__(self,firstname: str, secondname: str,team : str):
+        #print("NEWPLAYER")
         self.firstname = firstname
         self.secondname = secondname
         self.fullname = firstname + " " + secondname
-        self.fullname2 = []
+        self.team = team
+        self.ident = self.fullname + self.team
+
         self.games = None
         self.birthdate = None
         self.age = None
@@ -22,43 +27,42 @@ class Player():
         self.height = None
         self.weight = None
         self.predict_2019 = 0
+        self.mypredict_2019 = None
         # Change Year_list to dict
         self.year_dict = {}
-        self.team = None
+        self.year_list = []
+
+        # Basic Prediciton
+        self.scores = {
+            '2019': [-99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99,
+                     -99, -99, -99, -99, -99, -99, -99, -99, -99, -99]
+        } # add dict within dict for years ect...
+        self.std_game = None
+        self.std_pred_seas = None
+        self.std_inter_seas = None
+        self.game_pdf = None
+        self.year_ave_pdf = None # Confidence in the average score prediction
 
     def __str__(self):
-        return "%s %s " %(self.fullname, self.scPrice)
+        return "%s %s %s " %("player is", self.fullname, self.scPrice)
 
     # For Odering and Comparisons (check works later)
     def __eq__(self, other):
         return self.fullname == other.fullname
-
-    def update_Birthdate(self, birthdate):
-        self.birthdate = birthdate
 
     def update_info(self, birthdate: str, draftpick: int, draft_year: int):
         self.birthdate = birthdate
         self.draftpick = draftpick
         self.draft_year = draft_year
 
-
     def print_self(self):
         print(self.fullname,self.games,self.birthdate,self.age,self.position,self.scPrice,self.height,self.weight)
-
-    # For Data_clean
-    """def update_info_current(self, games: int, birthdate: datetime.date, position: str, scprice: int,
-                            height: int,
-                            weight: int):
-        self.games = games
-        self.birthdate = birthdate
-        self.position = position
-        self.scPrice = scprice
-        self.height = height
-        self.weight = weight"""
 
     def update_info_current(self, games: int, birthdate: datetime.date, position: str, scprice: int,
                             height: int,
                             weight: int):
+        #print(self.fullname,games,position,scprice)
+
         if birthdate is not None:
             birthdate = birthdate.split(",")
             if len(birthdate) == 3:
@@ -77,21 +81,22 @@ class Player():
             self.height = height
             self.weight = weight
 
-    def predict_year(self):
+    def check_add_year(self,year):
+        if str(year) not in self.year_dict:
+            self.year_dict[str(year)] = Player_year.Player_year(year)
+            self.year_list.append(self.year_dict[str(year)])
 
-        divisor = 0;
-        for year in Const.years:
-            year_tmp = self.year_dict.get(str(year))
-            if year_tmp is not None:
-                self.predict_2019 += Const.year_to_w[str(year)] * year_tmp.sc_ave * year_tmp.perc_played
-                divisor += Const.year_to_w[str(year)] * year_tmp.perc_played
-                # print("2018",year_tmp.sc_ave, year_tmp.perc_played,divisor)
+    def add_check_game(self,player_stat: Player_Stat,year):
+        self.check_add_year(str(year))
+        self.year_dict[str(year)].add_check_game(player_stat)
 
+    def print_years(self):
+        print(self.fullname)
+        for year in self.year_dict:
+            self.year_dict[year].print_player_year()
 
-        if divisor == 0:
-            self.predict_2019 = 0
-        else:
-            self.predict_2019 /= divisor
-
-
+    # Returns string for footywire players site
+    def footywire_playername(self)->str:
+        wire_name = self.secondname + ', ' + self.firstname
+        return wire_name
 
